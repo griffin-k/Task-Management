@@ -298,7 +298,15 @@
 
     
     <div class="container mx-auto p-8">
-        <h1 class="text-3xl font-bold text-center mb-8 text-white">Running Task</h1>
+        <div class="flex flex-col items-center">
+            <h1 class="text-3xl font-bold text-center mb-8 text-white">Running Task</h1>
+            <a href="view.html" class="px-4 mb-6 py-2 bg-white text-gray-400 font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition ease-in-out duration-150 text-base md:text-lg lg:text-xl inline-block">
+                Completed Tasks
+              </a>
+              
+          </div>
+          
+          
 
         <!-- Board Creation Form -->
         <form class="mb-6 input-group" onsubmit="event.preventDefault(); createBoard();">
