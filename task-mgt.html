@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Running Task</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Animate.css CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js"></script>
+
+    <style>
+        /* Simple transition for collapsible card */
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, opacity 0.5s ease;
+            opacity: 0;
+        }
+        .collapsible-content.open {
+            max-height: 1000px; /* Set a large max-height to allow expansion */
+            opacity: 1;
+        }
+
+        /* Status buttons inactive state */
+        .status-button {
+            background-color: #e2e8f0; /* Gray when not active */
+            color: #6b7280; /* Text gray when not active */
+            border-radius: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Active state for different statuses */
+        .status-button.pending.active {
+            background-color: #facc15; /* Yellow */
+            color: white;
+        }
+        .status-button.started.active {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+        }
+        .status-button.completed.active {
+            background-color: #10b981; /* Green */
+            color: white;
+        }
+
+        /* Card header and body styles */
+        .card-header {
+            background-color: #9ca3af; /* Gray 400 */
+            color: white; /* Black text */
+            transition: background-color 0.3s ease;
+            padding: 1rem; /* Added padding for better spacing */
+            position: relative;
+            display: flex;
+            align-items: center;
+            cursor: pointer; /* Make it clear that the header is clickable */
+        }
+
+        .card-body {
+            background-color: #ffffff; /* White */
+            color: #3b82f6; /* Blue text */
+            padding: 1rem;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            border-radius: 12px; /* Decreased radius */
+            overflow: hidden; /* Clipping any overflow */
+        }
+        .input-group input {
+            border-radius: 12px 0 0 12px; /* Decreased radius */
+            padding-right: 4rem; /* Adjust space for the button */
+            border: 1px solid #d1d5db; /* Gray border */
+            outline: none; /* Remove outline */
+        }
+        .input-group button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            border-radius: 0 12px 12px 0; /* Decreased radius */
+            padding: 0 1rem;
+            border: 1px solid #d1d5db; /* Gray border matching the input */
+            background-color: #3b82f6; /* Blue background */
+            color: white;
+            font-size: 1rem;
+            line-height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none; /* Remove outline */
+        }
+        .input-group button:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+        }
+
+        /* Custom Media Queries */
+        @media (max-width: 640px) { /* Small screens */
+            .card-header h2 {
+                font-size: 1.25rem; /* Smaller font size */
+            }
+            .card-body {
+                padding: 0.5rem; /* Less padding */
+            }
+            .input-group input {
+                padding-right: 2.5rem; /* Adjust space for button */
+            }
+            .input-group button {
+                padding: 0 0.5rem;
+                font-size: 0.875rem;
+            }
+            .task-card {
+                margin-bottom: 1rem; /* Margin between task cards */
+            }
+            .status-button {
+                font-size: 0.75rem; /* Smaller font size for status buttons */
+                padding: 0.25rem 0.5rem; /* Less padding */
+            }
+        }
+        @media (min-width: 641px) and (max-width: 768px) { /* Medium screens */
+            .card-header h2 {
+                font-size: 1.5rem; /* Slightly smaller font size */
+            }
+            .card-body {
+                padding: 0.75rem; /* Less padding */
+            }
+            .input-group input {
+                padding-right: 3rem; /* Adjust space for button */
+            }
+            .input-group button {
+                padding: 0 0.75rem;
+                font-size: 0.875rem;
+            }
+            .task-card {
+                margin-bottom: 1.5rem; /* Margin between task cards */
+            }
+            .status-button {
+                font-size: 0.875rem; /* Medium font size for status buttons */
+                padding: 0.5rem 0.75rem; /* Medium padding */
+            }
+        }
+        @media (min-width: 769px) { /* Large screens */
+            .card-header h2 {
+                font-size: 2rem; /* Larger font size */
+            }
+            .card-body {
+                padding: 1rem; /* More padding */
+            }
+            .input-group input {
+                padding-right: 4rem; /* Adjust space for button */
+            }
+            .input-group button {
+                padding: 0 1rem;
+                font-size: 1rem;
+            }
+            .task-card {
+                margin-bottom: 2rem; /* Margin between task cards */
+            }
+            .status-button {
+                font-size: 1rem; /* Standard font size for status buttons */
+                padding: 0.75rem 1rem; /* Standard padding */
+            }
+        }
+
+        /* Task Card Layout */
+        .task-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .task-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .task-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Collapsible Header */
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* Icon Rotation */
+        .collapsible-header .fa-chevron-up {
+            transform: rotate(180deg);
+        }
+        .capitalize-words {
+    text-transform: capitalize;
+}
+
+
+
+
+
+
+
+    </style>
+</head>
+<body class="bg-blue-500 capitalize-words">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-white">Running Task</h1>
+
+        <!-- Board Creation Form -->
+        <form class="mb-6 input-group" onsubmit="event.preventDefault(); createBoard();">
+            <input type="text" id="boardName" placeholder="Enter Board Name" class="block w-full p-4 text-sm text-gray-900 bg-gray-50" />
+            <button type="button" onclick="createBoard()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </form>
+
+        <!-- Boards Container -->
+        <div id="boardsContainer"></div>
+    </div>
+
+    <script type="module">
+        // Firebase configuration
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
+        import { getDatabase, ref, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js";
+    
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwXzkEk16JEdwcwGTszwGgMCywGTIFYw8",
+            authDomain: "task-mgt-3de44.firebaseapp.com",
+            projectId: "task-mgt-3de44",
+            storageBucket: "task-mgt-3de44.appspot.com",
+            messagingSenderId: "432979107810",
+            appId: "1:432979107810:web:53c3b2115e63a624af63bb"
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const boardsRef = ref(database, 'boards');
+        
+        // Track the currently expanded board
+        let expandedBoardId = null;
+    
+        window.createBoard = function() {
+            const boardName = document.getElementById('boardName').value.trim();
+            if (boardName === '') return alert("Please enter a board name.");
+            
+            const newBoardRef = push(boardsRef);
+            set(newBoardRef, { name: boardName }).then(() => {
+                document.getElementById('boardName').value = '';
+            });
+        }
+    
+        function renderBoards() {
+            onValue(boardsRef, (snapshot) => {
+                const container = document.getElementById('boardsContainer');
+                container.innerHTML = '';
+                snapshot.forEach((childSnapshot) => {
+                    const board = childSnapshot.val();
+                    const boardId = childSnapshot.key;
+    
+                    container.innerHTML += `
+                    <div class="card bg-white rounded-lg mb-4 shadow-lg">
+                        <div class="card-header px-4 flex items-center">
+                            <div class="flex-grow">
+                                <h2 class="text-xl font-semibold">${board.name}</h2>
+                            </div>
+                            <button onclick="deleteBoard('${boardId}')" class="text-red-500 ml-8">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            <i class="fas fa-chevron-down ml-4 cursor-pointer" id="toggle-icon-${boardId}" onclick="toggleTasks('${boardId}')"></i>
+                        </div>
+                        <div id="tasks-container-${boardId}" class="px-4 collapsible-content">
+                            <div class="mb-4 mt-4 input-group">
+                                <input type="text" id="taskName-${boardId}" placeholder="Enter Task Name" class="block w-full p-2 text-sm text-gray-900 bg-gray-50" />
+                                <button type="button" onclick="addTask('${boardId}')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="tasks-${boardId}"></div>
+                        </div>
+                    </div>
+                    `;
+    
+                    renderTasks(boardId);
+                });
+    
+                // Restore the expanded state of the previously expanded board
+                if (expandedBoardId) {
+                    const tasksContainer = document.getElementById(`tasks-container-${expandedBoardId}`);
+                    const toggleIcon = document.getElementById(`toggle-icon-${expandedBoardId}`);
+                    if (tasksContainer) {
+                        tasksContainer.classList.add('open');
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                }
+            });
+        }
+    
+        window.addTask = function(boardId) {
+            const taskName = document.getElementById(`taskName-${boardId}`).value.trim();
+            if (taskName === '') return alert("Please enter a task name.");
+            
+            const tasksRef = ref(database, `boards/${boardId}/tasks`);
+            const newTaskRef = push(tasksRef);
+            set(newTaskRef, {
+                name: taskName,
+                status: 'Pending'
+            }).then(() => {
+                document.getElementById(`taskName-${boardId}`).value = '';
+            });
+        }
+    
+        window.renderTasks = function(boardId) {
+            const tasksRef = ref(database, `boards/${boardId}/tasks`);
+            onValue(tasksRef, (snapshot) => {
+                const tasksContainer = document.getElementById(`tasks-${boardId}`);
+                tasksContainer.innerHTML = '';
+                snapshot.forEach((childSnapshot) => {
+                    const task = childSnapshot.val();
+                    const taskId = childSnapshot.key;
+                    tasksContainer.innerHTML += `
+                    <div class="task-card bg-gray-100 p-4 mb-2 rounded-lg">
+                        <div class="task-card-content">
+                            <div class="flex items-center mb-2">
+                                <div class="text-center font-semibold flex-grow">${task.name}</div>
+                                <button onclick="deleteTask('${boardId}', '${taskId}')" class="text-red-500 ml-4">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <hr class="mb-2 text-gray-500" />
+                            <div class="task-card-actions flex justify-center space-x-2">
+                                <button class="status-button pending ${task.status === 'Pending' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Pending')">Pending</button>
+                                <button class="status-button started ${task.status === 'Started' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Started')">Started</button>
+                                <button class="status-button completed ${task.status === 'Completed' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Completed')">Completed</button>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+            });
+        }
+    
+        window.deleteBoard = function(boardId) {
+            const boardRef = ref(database, `boards/${boardId}`);
+            remove(boardRef).then(() => {
+                renderBoards();
+            });
+        }
+    
+        window.deleteTask = function(boardId, taskId) {
+            const taskRef = ref(database, `boards/${boardId}/tasks/${taskId}`);
+            remove(taskRef).then(() => {
+                renderTasks(boardId);
+            });
+        }
+    
+        window.changeTaskStatus = function(boardId, taskId, status) {
+            const taskRef = ref(database, `boards/${boardId}/tasks/${taskId}`);
+            update(taskRef, { status: status }).then(() => {
+                renderTasks(boardId);
+            });
+        }
+    
+        window.toggleTasks = function(boardId) {
+            const tasksContainer = document.getElementById(`tasks-container-${boardId}`);
+            const toggleIcon = document.getElementById(`toggle-icon-${boardId}`);
+            
+            if (tasksContainer.classList.contains('open')) {
+                tasksContainer.classList.remove('open');
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+                if (expandedBoardId === boardId) {
+                    expandedBoardId = null; // Collapse the currently expanded board
+                }
+            } else {
+                // Collapse the previously expanded board
+                const prevExpandedContainer = document.querySelector('.collapsible-content.open');
+                const prevExpandedIcon = document.querySelector('.fa-chevron-up');
+                if (prevExpandedContainer && prevExpandedIcon) {
+                    prevExpandedContainer.classList.remove('open');
+                    prevExpandedIcon.classList.remove('fa-chevron-up');
+                    prevExpandedIcon.classList.add('fa-chevron-down');
+                }
+    
+                // Expand the selected board
+                tasksContainer.classList.add('open');
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+                expandedBoardId = boardId; // Set the new expanded board ID
+            }
+        }
+    
+        // Initial render
+        renderBoards();
+    </script>
+    
+    
+</body>
+</html>

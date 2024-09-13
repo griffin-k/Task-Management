@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Page Shake Animation */
+    .shake {
+      animation: shake 0.6s ease-in-out;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      50% { transform: translateX(10px); }
+      75% { transform: translateX(-10px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Card Animation */
+    .fade-in {
+      opacity: 0;
+      transform: scale(0.95);
+      animation: fadeInAnimation 0.8s ease-in-out forwards;
+    }
+
+    @keyframes fadeInAnimation {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Media Queries */
+    @media (max-width: 640px) {
+      /* On mobile devices */
+      .login-card {
+        max-width: 90%; /* Reduce width on small devices */
+        margin: 0 1rem; /* Add margin on left and right */
+      }
+    }
+
+    @media (min-width: 640px) {
+      /* On tablet and above */
+      .login-card {
+        max-width: 400px; /* Adjust max-width for larger devices */
+      }
+    }
+
+    @media (min-width: 1024px) {
+      /* On larger desktops */
+      .login-card {
+        max-width: 500px;
+        padding: 40px; /* More padding for larger screens */
+      }
+    }
+  </style>
+</head>
+<body class="bg-blue-500 flex items-center justify-center min-h-screen">
+
+  <!-- Full Page Wrapper for Shake Effect -->
+  <div id="pageWrapper" class="w-full h-full flex items-center justify-center">
+    <!-- Login Form Card -->
+    <div id="loginCard" class="login-card bg-white p-8 rounded-lg shadow-lg w-full fade-in transform transition duration-500 ease-in-out">
+      <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">Welcome Back!</h2>
+
+      <form id="loginForm" class="space-y-6">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+          <input type="text" id="username" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out" placeholder="Enter your username" required>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <input type="password" id="password" class="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105 ease-in-out">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Hardcoded credentials
+    const validUsername = 'admin';
+    const validPassword = 'admin';
+
+    // Form submission handler
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // Check credentials
+      if (username === validUsername && password === validPassword) {
+        window.location.href = 'task-mgt.html'; // Redirect to the next page
+      } else {
+        shakePage(); // Shake the page and clear the form fields if credentials are wrong
+      }
+    });
+
+    // Function to shake the page and clear form fields
+    function shakePage() {
+      const pageWrapper = document.getElementById('pageWrapper');
+      pageWrapper.classList.add('shake');
+
+      // Remove the shake effect after animation
+      setTimeout(() => {
+        pageWrapper.classList.remove('shake');
+        // Clear form fields
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+      }, 600); // Duration should match the animation time
+    }
+  </script>
+
+</body>
+</html>
