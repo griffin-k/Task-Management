@@ -245,15 +245,16 @@
     <script type="module">
         // Firebase configuration
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js";
-        import { getDatabase, ref, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js";
+        import { getDatabase, ref, set, update, remove, onValue, child, get } from "https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js";
     
         const firebaseConfig = {
             apiKey: "AIzaSyDwXzkEk16JEdwcwGTszwGgMCywGTIFYw8",
-            authDomain: "task-mgt-3de44.firebaseapp.com",
-            projectId: "task-mgt-3de44",
-            storageBucket: "task-mgt-3de44.appspot.com",
-            messagingSenderId: "432979107810",
-            appId: "1:432979107810:web:53c3b2115e63a624af63bb"
+  authDomain: "task-mgt-3de44.firebaseapp.com",
+  databaseURL: "https://task-mgt-3de44-default-rtdb.firebaseio.com",
+  projectId: "task-mgt-3de44",
+  storageBucket: "task-mgt-3de44.appspot.com",
+  messagingSenderId: "432979107810",
+  appId: "1:432979107810:web:53c3b2115e63a624af63bb"
         };
     
         // Initialize Firebase
@@ -264,13 +265,32 @@
         // Track the currently expanded board
         let expandedBoardId = null;
     
+        // Show toast notification
+        function showToast(message) {
+            alert(message); // Replace this with actual toast notification
+        }
+    
         window.createBoard = function() {
             const boardName = document.getElementById('boardName').value.trim();
-            if (boardName === '') return alert("Please enter a board name.");
-            
-            const newBoardRef = push(boardsRef);
-            set(newBoardRef, { name: boardName }).then(() => {
-                document.getElementById('boardName').value = '';
+            if (boardName === '') return showToast("Please enter a board name.");
+    
+            // Check if the board already exists
+            get(child(boardsRef, boardName)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    showToast("Board with this name already exists.");
+                    document.getElementById('boardName').value = ''; // Clear the field
+                } else {
+                    // Use boardName as key instead of push
+                    const newBoardRef = ref(database, `boards/${boardName}`);
+                    set(newBoardRef, { name: boardName }).then(() => {
+                        document.getElementById('boardName').value = ''; // Clear input field
+                        renderBoards();
+                    }).catch((error) => {
+                        showToast("Error creating board: " + error.message);
+                    });
+                }
+            }).catch((error) => {
+                showToast("Error checking board existence: " + error.message);
             });
         }
     
@@ -320,51 +340,63 @@
         }
     
         window.addTask = function(boardId) {
-    const taskName = document.getElementById(`taskName-${boardId}`).value.trim();
-    if (taskName === '') return alert("Please enter a task name.");
+            const taskName = document.getElementById(`taskName-${boardId}`).value.trim();
+            if (taskName === '') return showToast("Please enter a task name.");
     
-    const tasksRef = ref(database, `boards/${boardId}/tasks`);
-    const newTaskRef = push(tasksRef);
-    set(newTaskRef, {
-        name: taskName,
-        status: 'Pending'
-    }).then(() => {
-        document.getElementById(`taskName-${boardId}`).value = '';
-    }).catch((error) => {
-        console.error("Error adding task: ", error);
-    });
-}
-
-window.renderTasks = function(boardId) {
-    const tasksRef = ref(database, `boards/${boardId}/tasks`);
-    onValue(tasksRef, (snapshot) => {
-        const tasksContainer = document.getElementById(`tasks-${boardId}`);
-        tasksContainer.innerHTML = '';
-        snapshot.forEach((childSnapshot) => {
-            const task = childSnapshot.val();
-            const taskId = childSnapshot.key; // Firebase-generated unique key
-            tasksContainer.innerHTML += `
-            <div class="task-card bg-gray-100 p-4 mb-2 rounded-lg">
-                <div class="task-card-content">
-                    <div class="flex items-center mb-2">
-                        <div class="text-center font-semibold flex-grow">${task.name}</div>
-                        <button onclick="deleteTask('${boardId}', '${taskId}')" class="text-red-500 ml-4">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+            const tasksRef = ref(database, `boards/${boardId}/tasks`);
+            
+            // Check if the task already exists
+            get(child(tasksRef, taskName)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    showToast("Task with this name already exists.");
+                    document.getElementById(`taskName-${boardId}`).value = ''; // Clear the field
+                } else {
+                    // Use taskName as key instead of push
+                    const newTaskRef = ref(database, `boards/${boardId}/tasks/${taskName}`);
+                    set(newTaskRef, {
+                        name: taskName,
+                        status: 'Pending'
+                    }).then(() => {
+                        document.getElementById(`taskName-${boardId}`).value = ''; // Clear input field
+                        renderTasks(boardId);
+                    }).catch((error) => {
+                        showToast("Error adding task: " + error.message);
+                    });
+                }
+            }).catch((error) => {
+                showToast("Error checking task existence: " + error.message);
+            });
+        }
+    
+        window.renderTasks = function(boardId) {
+            const tasksRef = ref(database, `boards/${boardId}/tasks`);
+            onValue(tasksRef, (snapshot) => {
+                const tasksContainer = document.getElementById(`tasks-${boardId}`);
+                tasksContainer.innerHTML = '';
+                snapshot.forEach((childSnapshot) => {
+                    const task = childSnapshot.val();
+                    const taskId = childSnapshot.key;
+                    tasksContainer.innerHTML += `
+                    <div class="task-card bg-gray-100 p-4 mb-2 rounded-lg">
+                        <div class="task-card-content">
+                            <div class="flex items-center mb-2">
+                                <div class="text-center font-semibold flex-grow">${task.name}</div>
+                                <button onclick="deleteTask('${boardId}', '${taskId}')" class="text-red-500 ml-4">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <hr class="mb-2 text-gray-500" />
+                            <div class="task-card-actions flex justify-center space-x-2">
+                                <button class="status-button pending ${task.status === 'Pending' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Pending')">Pending</button>
+                                <button class="status-button started ${task.status === 'Started' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Started')">Started</button>
+                                <button class="status-button completed ${task.status === 'Completed' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Completed')">Completed</button>
+                            </div>
+                        </div>
                     </div>
-                    <hr class="mb-2 text-gray-500" />
-                    <div class="task-card-actions flex justify-center space-x-2">
-                        <button class="status-button pending ${task.status === 'Pending' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Pending')">Pending</button>
-                        <button class="status-button started ${task.status === 'Started' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Started')">Started</button>
-                        <button class="status-button completed ${task.status === 'Completed' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Completed')">Completed</button>
-                    </div>
-                </div>
-            </div>
-            `;
-        });
-    });
-}
-
+                    `;
+                });
+            });
+        }
     
         window.deleteBoard = function(boardId) {
             const boardRef = ref(database, `boards/${boardId}`);
@@ -419,6 +451,7 @@ window.renderTasks = function(boardId) {
         // Initial render
         renderBoards();
     </script>
+    
     
     
 </body>
