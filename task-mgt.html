@@ -320,48 +320,51 @@
         }
     
         window.addTask = function(boardId) {
-            const taskName = document.getElementById(`taskName-${boardId}`).value.trim();
-            if (taskName === '') return alert("Please enter a task name.");
-            
-            const tasksRef = ref(database, `boards/${boardId}/tasks`);
-            const newTaskRef = push(tasksRef);
-            set(newTaskRef, {
-                name: taskName,
-                status: 'Pending'
-            }).then(() => {
-                document.getElementById(`taskName-${boardId}`).value = '';
-            });
-        }
+    const taskName = document.getElementById(`taskName-${boardId}`).value.trim();
+    if (taskName === '') return alert("Please enter a task name.");
     
-        window.renderTasks = function(boardId) {
-            const tasksRef = ref(database, `boards/${boardId}/tasks`);
-            onValue(tasksRef, (snapshot) => {
-                const tasksContainer = document.getElementById(`tasks-${boardId}`);
-                tasksContainer.innerHTML = '';
-                snapshot.forEach((childSnapshot) => {
-                    const task = childSnapshot.val();
-                    const taskId = childSnapshot.key;
-                    tasksContainer.innerHTML += `
-                    <div class="task-card bg-gray-100 p-4 mb-2 rounded-lg">
-                        <div class="task-card-content">
-                            <div class="flex items-center mb-2">
-                                <div class="text-center font-semibold flex-grow">${task.name}</div>
-                                <button onclick="deleteTask('${boardId}', '${taskId}')" class="text-red-500 ml-4">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <hr class="mb-2 text-gray-500" />
-                            <div class="task-card-actions flex justify-center space-x-2">
-                                <button class="status-button pending ${task.status === 'Pending' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Pending')">Pending</button>
-                                <button class="status-button started ${task.status === 'Started' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Started')">Started</button>
-                                <button class="status-button completed ${task.status === 'Completed' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Completed')">Completed</button>
-                            </div>
-                        </div>
+    const tasksRef = ref(database, `boards/${boardId}/tasks`);
+    const newTaskRef = push(tasksRef);
+    set(newTaskRef, {
+        name: taskName,
+        status: 'Pending'
+    }).then(() => {
+        document.getElementById(`taskName-${boardId}`).value = '';
+    }).catch((error) => {
+        console.error("Error adding task: ", error);
+    });
+}
+
+window.renderTasks = function(boardId) {
+    const tasksRef = ref(database, `boards/${boardId}/tasks`);
+    onValue(tasksRef, (snapshot) => {
+        const tasksContainer = document.getElementById(`tasks-${boardId}`);
+        tasksContainer.innerHTML = '';
+        snapshot.forEach((childSnapshot) => {
+            const task = childSnapshot.val();
+            const taskId = childSnapshot.key; // Firebase-generated unique key
+            tasksContainer.innerHTML += `
+            <div class="task-card bg-gray-100 p-4 mb-2 rounded-lg">
+                <div class="task-card-content">
+                    <div class="flex items-center mb-2">
+                        <div class="text-center font-semibold flex-grow">${task.name}</div>
+                        <button onclick="deleteTask('${boardId}', '${taskId}')" class="text-red-500 ml-4">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
-                    `;
-                });
-            });
-        }
+                    <hr class="mb-2 text-gray-500" />
+                    <div class="task-card-actions flex justify-center space-x-2">
+                        <button class="status-button pending ${task.status === 'Pending' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Pending')">Pending</button>
+                        <button class="status-button started ${task.status === 'Started' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Started')">Started</button>
+                        <button class="status-button completed ${task.status === 'Completed' ? 'active' : ''}" onclick="changeTaskStatus('${boardId}', '${taskId}', 'Completed')">Completed</button>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+    });
+}
+
     
         window.deleteBoard = function(boardId) {
             const boardRef = ref(database, `boards/${boardId}`);
