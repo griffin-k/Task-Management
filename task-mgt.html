@@ -275,9 +275,7 @@
                             <div class="flex-grow">
                                 <h2 class="text-xl font-semibold">${board.name}</h2>
                             </div>
-                            <button onclick="deleteBoard('${boardId}')" class="text-red-500 ml-8">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                         
                             <i class="fas fa-chevron-down ml-4 cursor-pointer" id="toggle-icon-${boardId}" onclick="toggleTasks('${boardId}')"></i>
                         </div>
                         <div id="tasks-container-${boardId}" class="px-4 collapsible-content">
@@ -409,3 +407,8 @@
     
 </body>
 </html>
+
+
+<!-- <button onclick="deleteBoard('${boardId}')" class="text-red-500 ml-8">
+    <i class="fas fa-trash-alt"></i>
+</button> -->
