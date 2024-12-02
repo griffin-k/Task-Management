@@ -28,11 +28,7 @@ Before you begin, ensure you have the following:
 - A modern web browser (e.g., Chrome, Firefox).  
 - A Firebase account and project set up.  
 
-### Steps  
-1. **Clone the Repository**  
-   ```bash
-   git clone https://github.com/your-username/todo-list-app.git
-   cd todo-list-app
+
 
 ### Set Up Firebase
 
